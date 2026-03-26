@@ -68,9 +68,14 @@ def _build_regular_tokens_list(tokenizer: PreTrainedTokenizerBase, vocab_size: i
 
 
 def _decode_function(tokenizer: PreTrainedTokenizerBase, tokens: List[int]) -> str:
-    decoded = tokenizer.decode(tokens)
-    cleaned = decoded.rstrip('�')
-    return cleaned
+    # Disable clean_up_tokenization_spaces to prevent whitespace collapsing and
+    # punctuation normalization. Without this, tokenizer.decode() can silently drop
+    # characters (e.g. commas, spaces) when computing incremental new_characters in
+    # _apply_new_characters, causing the JSON parser state to desync and allowing
+    # premature EOS generation with incomplete/truncated JSON output.
+    # See: https://github.com/noamgat/lm-format-enforcer/issues/166
+    decoded = tokenizer.decode(tokens, clean_up_tokenization_spaces=False)
+    return decoded
 
 
 def build_token_enforcer_tokenizer_data(tokenizer: PreTrainedTokenizerBase, 
